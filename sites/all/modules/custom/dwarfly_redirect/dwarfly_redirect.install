@@ -1,0 +1,63 @@
+<?php
+
+// $Id$
+/**
+ * @file
+ * Module for store the short links $ statistics.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function dwarfly_redirect_install() {
+    // Use schema API to create database table.
+    //drupal_install_schema('dwarfly_statistics');
+    $success = drupal_install_schema('dwarfly_statistics');
+    if ($success) {
+        drupal_set_message(st('dwarfly_redirect module installed successfully.'));
+    } else {
+        drupal_set_message(st('The installation of dwarfly_redirect module failed.'), 'error');
+    }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function dwarfly_redirect_uninstall() {
+// Remove tables.
+    drupal_uninstall_schema('dwarfly_statistics');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function dwarfly_redirect_schema() {
+    $schema['dwarfly_statistics'] = array(
+        'description' => t('Stores URL according to each Dwarfly URL.'),
+        'fields' => array(
+            'sid' => array(
+                'description' => 'Primary identifier for dwarf link.',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE),
+            'clicked_timestamp' => array(
+                'description' => 'A Unix timestamp indicating when this link was clicked.',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0),
+            'dwarf_link' => array(
+                'description' => 'The url clicked.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => ''),
+            'did' => array(
+                'description' => 'The {dwarfly_url}.duid of the dwarfly which this link belongs to.',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0),
+        ),
+        'primary key' => array('sid'),
+    );
+    return $schema;
+}

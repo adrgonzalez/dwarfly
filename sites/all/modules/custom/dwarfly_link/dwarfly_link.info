@@ -1,0 +1,4 @@
+name = Dwarfly Links
+description = A form to include the link to be dwarfly.
+package = Dwarfly URLs
+core = 7.x

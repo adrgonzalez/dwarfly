@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ *
+ * Create a URL to review the dwarfly URL and redirect to the original one
+ *
+ */
+  function dwarfly_statistics_menu() {
+    $items = array();
+    $items['statistics'] = array(
+      'title' => 'URL Statistics',
+      'page callback' => 'dwarfly_statistics',
+      //'page arguments' => array(1),
+      'menu_name' => 'main-menu',
+      'access callback' => TRUE,
+    );
+    
+    $items['dwarfly'] = array(
+      'title' => 'URL Dwarfly',
+      'page callback' => 'dwarfly_urls',
+      //'page arguments' => array(1),
+      'menu_name' => 'main-menu',
+      'access callback' => TRUE,
+    );
+    return $items;
+  }
+ /**
+ * dwarfly_statistics
+ * 
+ * Function that redirect from the dwarfly url to the original.
+ * Store the info about this redirect to the statistics.
+ * 
+ * @param string $url 	number of characters in the generated string
+ * 
+ */
+  function dwarfly_urls() {      
+    $query = db_select('dwarfly_url', 'du');
+    $query->fields('du', array('original_link', 'dwarfly_link', 'date_created'));
+    $result = $query->execute();
+    //print_r($result);
+    if (!empty($result)) {
+        $header = array(
+            'original'  => t('Original URL'),
+            'dwarfly'   => t('Dwarfly URL'),
+            'date'      => t('Date created'));
+        $rows = array();
+        foreach ($result as $v) {
+          $date = date('m-d-Y H:i:s', $v->date_created);
+          $dwarfly_link = $GLOBALS['base_url'] . '/ly/' . $v->dwarfly_link;
+          $dwarfly_link = "<a href='$dwarfly_link'>$dwarfly_link</a>";
+          $rows[] = array($v->original_link, $dwarfly_link, $date);
+        }
+        $output = theme('table', 
+                array(
+                    'header'   => $header, 
+                    'rows'      => $rows,
+                    'border'    => 2,
+                )) . theme('pager');
+    }
+    return $output;
+  }
+
+ /**
+ * dwarfly_statistics
+ * 
+ * Function that redirect from the dwarfly url to the original.
+ * Store the info about this redirect to the statistics.
+ * 
+ * @param string $url 	number of characters in the generated string
+ * 
+ */
+  function dwarfly_statistics() {      
+    /*$query = db_select('dwarfly_statistics', 'ds');
+    $query->fields('ds', array('dwarf_link', ));
+    $query->addExpression('COUNT(*)', 'count');
+    $query->groupBy('dwarf_link');
+    $result = $query->countQuery()->execute(); 
+    //print_r($result);*/
+    $query = db_query("SELECT dwarf_link, count( * ) AS NUM
+                FROM `dwarfly_statistics`
+                GROUP BY dwarf_link");
+    $result = $query->fetchAll();
+    if (!empty($result)) {
+        $header = array(
+            'dwarfly'   => t('Dwarfly URL'),
+            'qty'      => t('Quantity'));
+        $rows = array();
+        foreach ($result as $v) {
+          $rows[] = array($v->dwarf_link, $v->NUM);
+        }
+        $output_count = theme('table', 
+                array(
+                    'header'   => $header, 
+                    'rows'      => $rows,
+                    'border'    => 2,
+                )) . theme('pager');
+    }
+    $output_count = '<h3>Quantity of Dwarfly URL clicked.</h3>' . $output_count;
+      
+    $query = db_select('dwarfly_statistics', 'ds');
+    $query->fields('ds', array('clicked_timestamp', 'dwarf_link', 'did'));
+    $result = $query->execute();
+    //print_r($result);
+    if (!empty($result)) {
+        $header = array(
+            'original'  => t('Original URL'),
+            'dwarfly'   => t('Dwarfly URL'),
+            'date'      => t('Date'));
+        $rows = array();
+        foreach ($result as $v) {
+          $original_link = get_original_url($v->did);
+          $date = date('m-d-Y H:i:s', $v->clicked_timestamp);
+          $dwarf_link = "<a href='$v->dwarf_link'>$v->dwarf_link</a>";
+          $rows[] = array($original_link, $dwarf_link, $date);
+        }
+        $output = theme('table', 
+                array(
+                    'header'   => $header, 
+                    'rows'      => $rows,
+                    'border'    => 2,
+                )) . theme('pager');
+    }
+    $output = '<h3>List of Dwarfly URL clicked.</h3>' . $output;
+    
+    return $output_count . $output;
+  }
+  
+ /**
+ * find_url
+ * 
+ * Function to know if a URL exist or not into the DB.
+ * 
+ * @param string $url 	number of characters in the generated string.
+ * 
+ * @return boolean	return false or true.
+ * 
+ */
+  function get_original_url($duid) {
+      $query = db_select('dwarfly_url', 'du');
+      $query->condition('du.duid', $duid, '=')
+            ->fields('du', array('original_link'));
+      $result = $query->execute()->fetchAll();
+      if (!empty($result)) {
+        return $result[0]->original_link;
+      }
+  }
+

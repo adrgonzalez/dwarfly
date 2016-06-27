@@ -1,0 +1,80 @@
+<?php
+
+global $base_url;
+/**
+ * Implements hook_menu().
+ *
+ * Create a URL to review the dwarfly URL and redirect to the original one
+ *
+ */
+  function dwarfly_redirect_menu() {
+    $items = array();
+    $items['ly/%'] = array(
+      'title' => 'Redirecting...',
+      'page callback' => 'dwarfly_redirect',
+      'page arguments' => array(1),
+      'access callback' => TRUE,
+    );
+    return $items;
+  }
+
+ /**
+ * dwarfly_redirect
+ * 
+ * Function that redirect from the dwarfly url to the original.
+ * Store the info about this redirect to the statistics.
+ * 
+ * @param string $url 	number of characters in the generated string
+ * 
+ */
+  function dwarfly_redirect($url) {
+      $url = check_plain($url);
+      if (!empty($url)) {
+        $query = db_select('dwarfly_url', 'du');
+        $query->condition('du.dwarfly_link', $url, '=')
+              ->fields('du', array('duid', 'original_link'));
+
+        $result = $query->execute()->fetchAll();
+        print_r($result);
+        if (!empty($result)) {
+            if ($result[0]->duid) {
+                $dwarfly_url = $GLOBALS['base_url'] . '/ly/' . $url;
+                $original_url = $result[0]->original_link;
+                //Register statistics
+                dwarfly_redirect_store($result[0]->duid, $dwarfly_url);
+                header("Location: $original_url");
+            }
+            else{
+                drupal_set_message("The Dwarfly URL is invalid, please try with other!", 'error');
+            }
+        }
+      }
+      else {
+          drupal_set_message("An error with the Dwarfly URL, please check it and try again!", 
+                  'error');
+      }
+      return 'wait!';
+  }
+  
+ /**
+ * dwarfly_redirect_store
+ * 
+ * Function to store when a user clicked the Dwarfly URL.
+ * 
+ * @param int $did              The dwarfly_links id of the dwarfly which this link belongs to.
+ * 
+ * @param string $dwarf_link 	string with the Dwarfly URL.
+ * 
+ * @return none 
+ * 
+ */
+  function dwarfly_redirect_store($did, $dwarf_link) {
+      $timestamp = time();
+      $id = db_insert('dwarfly_statistics')
+              ->fields(array(
+                'clicked_timestamp' => $timestamp,
+                'dwarf_link' => $dwarf_link,
+                'did' => $did,
+    ))
+    ->execute();
+}

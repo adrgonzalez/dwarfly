@@ -1,0 +1,4 @@
+name = Dwarfly Redirect
+description = Create the redirect when the Dwarfly URL is clicked and store the principal info to keep statistics.
+package = Dwarfly URLs
+core = 7.x

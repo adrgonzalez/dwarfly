@@ -1,0 +1,151 @@
+<?php
+
+/**
+ * Implements hook_form().
+ *
+ * Form to convert the long URL to short one.
+ *
+ */
+function dwarfly_link_form($form, &$form_state) {
+    $form = array();
+    //$form['id'] = 'dwarfly-url-form';
+    $form['url'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Insert your URL to be transform into a Dwarfly URL: '),
+        '#maxlength' => 256,
+        '#size' => 150,
+        '#required' => TRUE,
+    );
+    $form['submit'] = array(
+        '#type' => 'submit',
+        /*'#validate' => array('statistiques_form_validate'),
+        '#submit' => array('statistiques_form_submit'),*/
+        '#value' => t('Dwarfly!'),
+    );
+    return $form;
+}
+
+/**
+ * Implements hook_form().
+ *
+ * Validation about the URL inserted into the field, trying to make safe it.
+ *
+ */
+function dwarfly_link_form_validate($form, &$form_state) {
+    $original_link = $form_state['values']['url'];
+    $original_link = check_plain($original_link);
+    if ( empty($original_link) ) {
+        form_set_error('url', 'URL error, please try again!');
+    }    
+}
+
+/**
+ * Implements hook_submit().
+ *
+ * Logic to change the URL.
+ * Insert into the URLs table.
+ *
+ */
+function dwarfly_link_form_submit($form, &$form_state) {
+    $original_link = $form_state['values']['url'];
+    // Create a new URL with strings of 5-9 alphanumeric characters
+    $dwarfly_url = create_DwarfURL(rand(4, 8));
+    
+    // If the URL generated already exist then create a new one
+    if (find_url($dwarfly_url)) {
+        $dwarfly_url = create_DwarfURL(rand(4, 8));
+    }
+    $timestamp = time();
+    
+    $query = db_insert('dwarfly_url')
+            ->fields(array(
+              'original_link' => $original_link,
+              'dwarfly_link' => $dwarfly_url,
+              'date_created' => $timestamp,));
+    if ($query->execute()){
+        drupal_set_message('This is the Dwarfly URL: ' . $GLOBALS['base_url'] . '/ly/' . $dwarfly_url);
+    }
+    else{
+        drupal_set_message('Something wrong with the URL generate, please try again!', 'error');
+    }
+}
+
+ /**
+ * create_DwarfURL
+ * 
+ * function to generate random strings
+ * 
+ * @param int $length 	number of characters in the generated string
+ * 
+ * @return string	string created with random alphanumerics characters (new URL)
+ * 
+ */
+function create_DwarfURL($length) {
+    $new_url = '';
+    srand((double) microtime(TRUE) * 1000000);
+    //alphanumerics array
+    $chars = array(
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'p',
+        'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5',
+        '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 
+        'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z');
+    for ($rand = 0; $rand <= $length; $rand++) {
+        $random = rand(0, count($chars) - 1);
+        $new_url .= $chars[$random];
+    }
+    return $new_url;
+}
+
+ /**
+ * find_url
+ * 
+ * Function to know if a URL exist or not into the DB.
+ * 
+ * @param string $url 	number of characters in the generated string.
+ * 
+ * @return boolean	return false or true.
+ * 
+ */
+  function find_url($dwarfURL) {
+      $query = db_select('dwarfly_url', 'du');
+      $query->condition('du.dwarfly_link', $dwarfURL, '=')
+            ->fields('du', array('duid'));
+      $result = $query->execute()->fetchAll();
+      if (!empty($result)) {
+        if ($result[0]->duid) {
+            return TRUE;      
+        }
+        else{
+            return FALSE;
+        }
+      }
+  }
+
+ /**
+ * Implements hook_block_info().
+ */
+function dwarfly_link_block_info() {
+    $blocks = array();
+    $blocks['dwarfly-url-block'] = array(
+      'info' => t('Dwarfly block to include the dwarfly form'),
+    );
+    return $blocks;
+}
+ 
+/**
+ * Implements hook_block_view().
+ */
+function dwarfly_link_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'dwarfly-url-block':
+      $block['content'] = dwarfly_link_block_content();
+      //$block['form'] = drupal_get_form('dwarfly_url_form');
+      break;
+  }
+  return $block;
+}
+
+function dwarfly_link_block_content(){
+    return drupal_get_form('dwarfly_link_form');
+}

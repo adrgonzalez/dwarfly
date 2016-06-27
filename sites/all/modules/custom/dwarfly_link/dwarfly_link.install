@@ -1,0 +1,64 @@
+<?php
+
+// $Id$
+/**
+ * @file
+ * Module for store the short links $ statistics.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function dwarfly_link_install() {
+    // Use schema API to create database table.
+    //drupal_install_schema('dwarfly_url');
+    $success = drupal_install_schema('dwarfly_url');
+    if ($success) {
+        drupal_set_message(st('dwarfly_link module installed successfully.'));
+    } else {
+        drupal_set_message(st('The installation of dwarfly_link module failed.'), 'error');
+    }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function dwarfly_link_uninstall() {
+// Remove tables.
+    drupal_uninstall_schema('dwarfly_url');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function dwarfly_link_schema() {
+    $schema['dwarfly_url'] = array(
+        'description' => t('Stores the links included in the link\'s form.'),
+        'fields' => array(
+            'duid' => array(
+                'description' => 'The primary identifier for a dwarfly URL.',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE),
+            'original_link' => array(
+                'description' => 'The URL to be transform in a dwarfly URL.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => ''),
+            'dwarfly_link' => array(
+                'description' => 'The dwarfly URL.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => ''),
+            'date_created' => array(
+                'description' => 'A Unix timestamp indicating when this URL was created.',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0),
+        ),
+        'primary key' => array('duid'),
+    );
+    return $schema;
+}
